@@ -41,7 +41,7 @@ namespace MHServerEmu.Commands.Implementations
             Avatar avatar = player.CurrentAvatar;
 
             LootManager lootManager = playerConnection.Game.LootManager;
-            
+
             for (int i = 0; i < count; i++)
             {
                 lootManager.SpawnItem(itemProtoRef, LootContext.Drop, player, avatar);
@@ -103,6 +103,77 @@ namespace MHServerEmu.Commands.Implementations
             return $"Destroyed {indestructibleItemList.Count} indestructible items.";
         }
 
+        [Command("sort")]
+        [CommandDescription("Sorts the player's general inventory.")]
+        [CommandUsage("item sort [rarity|type|name]")]
+        [CommandInvokerType(CommandInvokerType.Client)]
+        public string Sort(string[] @params, NetClient client)
+        {
+            PlayerConnection playerConnection = (PlayerConnection)client;
+            Player player = playerConnection.Player;
+
+            Inventory general = player.GetInventory(InventoryConvenienceLabel.General);
+            if (general == null)
+                return "Could not find your general inventory.";
+
+            // Collect all items from the inventory
+            List<Item> items = new();
+            foreach (var entry in general)
+            {
+                Item item = player.Game.EntityManager.GetEntity<Item>(entry.Id);
+                if (item == null) continue;
+                items.Add(item);
+            }
+
+            if (items.Count == 0)
+                return "Your inventory is empty.";
+
+            // Parse optional sort key, default to rarity
+            string sortBy = @params.Length > 0 ? @params[0].ToLowerInvariant() : "rarity";
+
+            List<Item> sorted = sortBy switch
+            {
+                "type" => items
+                    .OrderBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
+                    .ThenByDescending(x => GetRarityTier(x))
+                    .ThenBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
+                    .ToList(),
+
+                "name" => items
+                    .OrderBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
+                    .ToList(),
+
+                _ => // rarity (default)
+                    items
+                    .OrderByDescending(x => GetRarityTier(x))
+                    .ThenBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
+                    .ThenBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
+                    .ToList()
+            };
+
+            int n = sorted.Count;
+            ulong? stackEntityId = null;
+
+            // Pass 1 — stage all items into high slot numbers to vacate slots 0..n-1
+            // This avoids collisions when MoveEntityTo tries to swap items into occupied slots
+            for (int i = 0; i < n; i++)
+            {
+                Inventory.ChangeEntityInventoryLocation(sorted[i], general, (uint)(n + i), ref stackEntityId, false);
+                stackEntityId = null;
+            }
+
+            // Pass 2 — move each item into its final sorted slot
+            for (int i = 0; i < n; i++)
+            {
+                Inventory.ChangeEntityInventoryLocation(sorted[i], general, (uint)i, ref stackEntityId, false);
+                stackEntityId = null;
+            }
+
+            Logger.Debug($"Sort(): sorted {n} items by {sortBy} for {player}");
+
+            return $"Sorted {n} items by {sortBy}.";
+        }
+
         [Command("roll")]
         [CommandDescription("Rolls the specified loot table.")]
         [CommandUsage("item roll [pattern]")]
@@ -152,7 +223,7 @@ namespace MHServerEmu.Commands.Implementations
         [CommandInvokerType(CommandInvokerType.Client)]
         public string CreditChest(string[] @params, NetClient client)
         {
-            const PrototypeId CreditItemProtoRef = (PrototypeId)13983056721138685632; // Entity/Items/Crafting/Ingredients/CreditItem500k.prototype
+            const PrototypeId CreditItemProtoRef = (PrototypeId)13983056721138685632;
             const int CreditItemPrice = 500000;
 
             PlayerConnection playerConnection = (PlayerConnection)client;
@@ -196,6 +267,17 @@ namespace MHServerEmu.Commands.Implementations
             deliveryBox.DestroyContained();
 
             return $"Destroyed {count} items contained in the delivery box inventory.";
+        }
+
+        // ── Helpers ──────────────────────────────────────────────────────────
+
+        private static int GetRarityTier(Item item)
+        {
+            if (item?.ItemPrototype == null) return 0;
+            PrototypeId rarityRef = item.ItemPrototype.Rarity;
+            if (rarityRef == PrototypeId.Invalid) return 0;
+            RarityPrototype rarityProto = GameDatabase.GetPrototype<RarityPrototype>(rarityRef);
+            return rarityProto != null ? (int)rarityProto.Tier : 0;
         }
     }
 }

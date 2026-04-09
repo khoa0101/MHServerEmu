@@ -128,27 +128,32 @@ namespace MHServerEmu.Commands.Implementations
             if (items.Count == 0)
                 return "Your inventory is empty.";
 
-            // Parse optional sort key, default to rarity
-            string sortBy = @params.Length > 0 ? @params[0].ToLowerInvariant() : "rarity";
+            // Parse optional sort key, default to type
+            string sortBy = @params.Length > 0 ? @params[0].ToLowerInvariant() : "type";
 
             List<Item> sorted = sortBy switch
             {
-                "type" => items
-                    .OrderBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
-                    .ThenByDescending(x => GetRarityTier(x))
-                    .ThenBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
-                    .ToList(),
 
                 "name" => items
                     .OrderBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
+                    .ThenByDescending(x => x.RarityPrototype?.Tier ?? 0)
+                    .ThenBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
+                    .ThenByDescending(x => x.ItemSpec.ItemLevel)
                     .ToList(),
 
-                _ => // rarity (default)
-                    items
-                    .OrderByDescending(x => GetRarityTier(x))
+                "rarity" => items
+                    .OrderByDescending(x => x.RarityPrototype?.Tier ?? 0)
                     .ThenBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
                     .ThenBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
-                    .ToList()
+                    .ThenByDescending(x => x.ItemSpec.ItemLevel)
+                    .ToList(),
+
+                _ => items // default to type
+                    .OrderBy(x => x.ItemPrototype?.GetType().Name ?? string.Empty)
+                    .ThenByDescending(x => x.RarityPrototype?.Tier ?? 0)
+                    .ThenBy(x => GameDatabase.GetPrototypeName(x.PrototypeDataRef))
+                    .ThenByDescending(x => x.ItemSpec.ItemLevel)
+                    .ToList(),
             };
 
             int n = sorted.Count;
@@ -271,13 +276,13 @@ namespace MHServerEmu.Commands.Implementations
 
         // ── Helpers ──────────────────────────────────────────────────────────
 
-        private static int GetRarityTier(Item item)
-        {
-            if (item?.ItemPrototype == null) return 0;
-            PrototypeId rarityRef = item.ItemPrototype.Rarity;
-            if (rarityRef == PrototypeId.Invalid) return 0;
-            RarityPrototype rarityProto = GameDatabase.GetPrototype<RarityPrototype>(rarityRef);
-            return rarityProto != null ? (int)rarityProto.Tier : 0;
-        }
+        // private static int GetRarityTier(Item item)
+        // {
+        //     if (item?.ItemSpec == null) return 0;
+        //     PrototypeId rarityRef = item.ItemSpec.RarityProtoRef;
+        //     if (rarityRef == PrototypeId.Invalid) return 0;
+        //     RarityPrototype rarityProto = GameDatabase.GetPrototype<RarityPrototype>(rarityRef);
+        //     return rarityProto != null ? (int)rarityProto.Tier : 0;
+        // }
     }
 }

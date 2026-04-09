@@ -193,6 +193,8 @@ namespace MHServerEmu.Games.Entities
         public bool PlayerTradePartnerConfirmFlag { get; private set; }
         public uint PlayerTradeSequenceNumber { get; private set; }
 
+        public bool ProfileServerFrame { get; set; }
+
         public Player(Game game) : base(game)
         {
             MissionManager = new(Game, this);
@@ -2872,7 +2874,7 @@ namespace MHServerEmu.Games.Entities
         }
 
         public bool SendRegionRequestQueueCommandToPlayerManager(PrototypeId regionRef, PrototypeId difficultyTierRef,
-            RegionRequestQueueCommandVar command, ulong groupId = 0, ulong targetPlayerDbId = 0)
+            RegionRequestQueueCommandVar command, ulong groupId = 0, ulong targetPlayerDbId = 0, int teamSizeOverride = -1)
         {
             ulong playerDbId = DatabaseUniqueId;
             ulong regionProtoId = (ulong)regionRef;
@@ -2904,7 +2906,7 @@ namespace MHServerEmu.Games.Entities
                     break;
             }
 
-            ServiceMessage.MatchRegionRequestQueueCommand message = new(playerDbId, regionProtoId, difficultyTierProtoId, metaStateProtoId, command, groupId, targetPlayerDbId);
+            ServiceMessage.MatchRegionRequestQueueCommand message = new(playerDbId, regionProtoId, difficultyTierProtoId, metaStateProtoId, command, groupId, targetPlayerDbId, teamSizeOverride);
             ServerManager.Instance.SendMessageToService(GameServiceType.PlayerManager, message);
 
             return true;
@@ -3029,11 +3031,12 @@ namespace MHServerEmu.Games.Entities
 
         public bool DiscoverMapPosition(Vector3 position, bool syncWithParty = true)
         {
-            var region = CurrentAvatar?.Region;
-            if (region == null) return Logger.WarnReturn(false, "UpdateMapDiscovery(): region == null");
+            Region region = CurrentAvatar?.Region;
+            if (region == null)
+                return false;
 
             MapDiscoveryData mapDiscoveryData = GetMapDiscoveryDataForEntity(CurrentAvatar);
-            if (mapDiscoveryData == null) return Logger.WarnReturn(false, "UpdateDiscoveryMap(): mapDiscoveryData == null");
+            if (mapDiscoveryData == null) return Logger.WarnReturn(false, "DiscoverMapPosition(): mapDiscoveryData == null");
 
             bool reveal = mapDiscoveryData.RevealPosition(this, position);
 
@@ -4197,10 +4200,13 @@ namespace MHServerEmu.Games.Entities
             // Update veteran (login) rewards
             if (Game.GameOptions.VeteranRewardsEnabled)
             {
-                int loginCount = GetLoginCount();
+                if (GetLoginCount(out int loginCount))
+                {
+                    GiveLoginRewards(loginCount);
+                    Properties[PropertyEnum.LoginCount] = loginCount;
 
-                GiveLoginRewards(loginCount);
-                Properties[PropertyEnum.LoginCount] = loginCount;
+                    GiveEventDailyGifts();
+                }
             }
 
             // Send gifting restrictions update.
@@ -4212,25 +4218,33 @@ namespace MHServerEmu.Games.Entities
                 .Build());
         }
 
-        private int GetLoginCount()
+        private bool GetLoginCount(out int loginCount)
         {
+            bool rollover = false;
+
             // Check the rollover (daily at 10 AM UTC+0, same as shared quests)
             using PropertyCollection rolloverProperties = ObjectPoolManager.Instance.Get<PropertyCollection>();
             rolloverProperties[PropertyEnum.LootCooldownRolloverWallTime, 0, (PropertyParam)Weekday.All] = 10f;
 
             TimeSpan currentTime = Clock.UnixTime;
 
-            if (LootUtilities.GetLastLootCooldownRolloverWallTime(rolloverProperties, currentTime, out TimeSpan lastRolloverTime) == false)
-                return Logger.WarnReturn(0, "GetLoginCount(): Failed to get last loot cooldown rollover wall time");
-
-            if (lastRolloverTime > _loginRewardCooldownTimeStart)
+            if (LootUtilities.GetLastLootCooldownRolloverWallTime(rolloverProperties, currentTime, out TimeSpan lastRolloverTime))
             {
-                _loginCount++;
-                _loginRewardCooldownTimeStart = currentTime;
-                Logger.Trace($"GetLoginCount(): Rollover for player [{this}], loginCount = {_loginCount}");
+                if (lastRolloverTime > _loginRewardCooldownTimeStart)
+                {
+                    rollover = true;
+                    _loginCount++;
+                    _loginRewardCooldownTimeStart = currentTime;
+                    Logger.Trace($"GetLoginCount(): Rollover for player [{this}], loginCount = {_loginCount}");
+                }
+            }
+            else
+            {
+                Logger.Warn("GetLoginCount(): Failed to get last loot cooldown rollover wall time");
             }
 
-            return (int)_loginCount;
+            loginCount = (int)_loginCount;
+            return rollover;
         }
 
         private void GiveLoginRewards(int loginCount)
@@ -4261,6 +4275,17 @@ namespace MHServerEmu.Games.Entities
                 }
 
                 Properties[rewardId] = (long)Clock.UnixTime.TotalSeconds;
+            }
+        }
+
+        private void GiveEventDailyGifts()
+        {
+            LootManager lootManager = Game.LootManager;
+
+            foreach (PrototypeId eventDailyGiftProtoRef in Game.EventDailyGifts)
+            {
+                if (lootManager.GiveItem(eventDailyGiftProtoRef, LootContext.CashShop, this) == false)
+                    Logger.Warn($"GiveEventDailyGifts(): Failed to give event daily gift {eventDailyGiftProtoRef.GetName()} to player [{this}]");
             }
         }
 

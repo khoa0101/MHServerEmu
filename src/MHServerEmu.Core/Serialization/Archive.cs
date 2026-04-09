@@ -24,9 +24,10 @@ namespace MHServerEmu.Core.Serialization
         Invalid = 0,
         // Versions 1-8 were used in the 0.x branch, so we start at 9 here.
         Initial = 9,
+        AddedMissionEventInstance = 10,
 
         // Update the current version if you add any    <---------
-        Current = Initial
+        Current = AddedMissionEventInstance
     }
 
     public enum GameBuildNumber : uint
@@ -173,7 +174,7 @@ namespace MHServerEmu.Core.Serialization
             {
                 ReadBuffer = new byte[4096];
                 WriteBuffer = new byte[32];     // We flush after every value, so we can use very small buffer sizes for output (default is 4096).
-                SharedAutoBuffer = new(1024);
+                SharedAutoBuffer = new(65536);
             }
         }
 

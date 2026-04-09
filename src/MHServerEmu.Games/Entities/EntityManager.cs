@@ -25,13 +25,13 @@ namespace MHServerEmu.Games.Entities
     {
         Simulated = 0,
         Locomotion = 1,
-        All = 3,
+        All = 2,    // unused?
     }
 
-    public class EntityInvasiveCollection : InvasiveList<Entity>
+    public sealed class EntityInvasiveCollection : InvasiveList<Entity>
     {
         public EntityInvasiveCollection(EntityCollection collectionType, int maxIterators = 8) : base(maxIterators, (int)collectionType) { }
-        public override InvasiveListNode<Entity> GetInvasiveListNode(Entity element, int listId) => element.GetInvasiveListNode(listId);
+        public override ref InvasiveListNode<Entity> GetInvasiveListNode(Entity element, int listId) => ref element.GetInvasiveListNode(listId);
     }
 
     public readonly struct DestroyEntityEvent(Entity entity) : IGameEventData
@@ -82,6 +82,11 @@ namespace MHServerEmu.Games.Entities
             AllEntities = new(EntityCollection.All);
             SimulatedEntities = new(EntityCollection.Simulated);
             LocomotionEntities = new(EntityCollection.Locomotion);
+        }
+
+        public Dictionary<ulong, Entity>.ValueCollection.Enumerator GetEnumerator()
+        {
+            return _entityDict.Values.GetEnumerator();
         }
 
         public bool Initialize()
@@ -449,7 +454,7 @@ namespace MHServerEmu.Games.Entities
 
         public void LocomoteEntities()
         {
-            foreach (var entity in LocomotionEntities.Iterate())
+            foreach (var entity in LocomotionEntities)
                 if (entity is WorldEntity worldEntity)
                     worldEntity?.Locomotor.Locomote();
         }
@@ -586,7 +591,7 @@ namespace MHServerEmu.Games.Entities
             IsAIEnabled = enable;
 
             if (enable)
-                foreach (var entity in SimulatedEntities.Iterate())
+                foreach (var entity in SimulatedEntities)
                     if (entity is Agent agent) agent.AIController?.SetIsEnabled(true);
 
             foreach (var entity in _entityDict.Values)

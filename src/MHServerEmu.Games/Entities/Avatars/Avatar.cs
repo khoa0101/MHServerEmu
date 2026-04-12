@@ -7098,6 +7098,14 @@ namespace MHServerEmu.Games.Entities.Avatars
             // Assign powers
             InitializePowers();
 
+            // Apply live tuning global cooldown modifier
+            if (Prototype is AvatarPrototype avatarProto)
+            {
+                float cooldownMult = LiveTuningManager.GetLiveAvatarTuningVar(avatarProto, AvatarEntityTuningVar.eAETV_CooldownGlobalMult);
+                if (cooldownMult != 0f)
+                    Properties.AdjustProperty(cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
+            }
+
             if (Game.InfinitySystemEnabled)
                 InitializeInfinityBonuses();
             else
@@ -7240,6 +7248,12 @@ namespace MHServerEmu.Games.Entities.Avatars
                 ConditionCollection.RemoveCondition(_avatarSynergyConditionId);
                 _avatarSynergyConditionId = ConditionCollection.InvalidConditionId;
             }
+
+            // Remove live tuning cooldown modifier
+            float cooldownMult = LiveTuningManager.GetLiveAvatarTuningVar(
+                AvatarPrototype, AvatarEntityTuningVar.eAETV_CooldownGlobalMult);
+            if (cooldownMult != 0f)
+                Properties.AdjustProperty(-cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
 
             RemoveLiveTuneServerConditions();
 

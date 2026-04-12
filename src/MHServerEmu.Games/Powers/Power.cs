@@ -3169,7 +3169,7 @@ namespace MHServerEmu.Games.Powers
             TimeSpan interruptCooldown = owner.GetPowerInterruptCooldown(powerProto);
             cooldown = Clock.Max(cooldown, interruptCooldown);
 
-            // Make we don't get a negative cooldown
+            // Make sure we don't get a negative cooldown
             return Clock.Max(cooldown, TimeSpan.Zero);
         }
 

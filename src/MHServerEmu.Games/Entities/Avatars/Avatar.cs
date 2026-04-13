@@ -7101,9 +7101,9 @@ namespace MHServerEmu.Games.Entities.Avatars
             // Apply live tuning global cooldown modifier
             if (Prototype is AvatarPrototype avatarProto)
             {
-                float cooldownMult = LiveTuningManager.GetLiveAvatarTuningVar(avatarProto, AvatarEntityTuningVar.eAETV_CooldownGlobalMult);
-                if (cooldownMult != 0f)
-                    Properties.AdjustProperty(cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
+                float cooldownMult = LiveTuningManager.GetLiveAvatarTuningVar(
+                    avatarProto, AvatarEntityTuningVar.eAETV_CooldownGlobalMult) - 1.0f;
+                Properties.AdjustProperty(cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
             }
 
             if (Game.InfinitySystemEnabled)
@@ -7251,9 +7251,8 @@ namespace MHServerEmu.Games.Entities.Avatars
 
             // Remove live tuning cooldown modifier
             float cooldownMult = LiveTuningManager.GetLiveAvatarTuningVar(
-                AvatarPrototype, AvatarEntityTuningVar.eAETV_CooldownGlobalMult);
-            if (cooldownMult != 0f)
-                Properties.AdjustProperty(-cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
+                AvatarPrototype, AvatarEntityTuningVar.eAETV_CooldownGlobalMult) - 1.0f;
+            Properties.AdjustProperty(-cooldownMult, PropertyEnum.CooldownModifierPctGlobal);
 
             RemoveLiveTuneServerConditions();
 

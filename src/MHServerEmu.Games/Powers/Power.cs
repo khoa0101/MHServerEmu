@@ -1579,7 +1579,11 @@ namespace MHServerEmu.Games.Powers
                 }
 
                 //Logger.Debug($"StartCooldown(): {Prototype} - {cooldownDuration.TotalMilliseconds} ms");
-            }
+            } 
+            else if (ShouldReplenishCharges())
+            {
+                OnCooldownEndCallback();
+            } 
 
             return true;
         }

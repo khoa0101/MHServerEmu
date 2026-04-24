@@ -1,4 +1,6 @@
 ﻿using MHServerEmu.Core.Config;
+using MHServerEmu.Games.Entities;
+using MHServerEmu.Games.GameData.Prototypes;
 
 namespace MHServerEmu.Games
 {
@@ -22,5 +24,11 @@ namespace MHServerEmu.Games
         public bool UsePrestigeLootTable { get; private set; } = false;
         public bool EnableUltimatePrestige { get; private set; } = false;
         public bool ApplyHiddenPvPDamageModifiers { get; private set; } = false;
+        public int PetDonationMultiplierAffix1 {  get; private set; } = 1;
+        public int PetDonationMultiplierAffix2 { get; private set; } = 1;
+        public int PetDonationMultiplierAffix3 { get; private set; } = 1;
+        public int PetDonationMultiplierAffix4 { get; private set; } = 1;
+        public int PetDonationMultiplierAffix5 { get; private set; } = 1;
+        public float DefaultDamageBoost { get; private set; } = 0f;
     }
 }

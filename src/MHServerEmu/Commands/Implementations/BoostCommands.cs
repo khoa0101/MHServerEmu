@@ -77,5 +77,38 @@ namespace MHServerEmu.Commands.Implementations
 
             return $"Endurance costs {(newValue ? "disabled" : "enabled")}.";
         }
+
+        [Command("god")]
+        [CommandDescription("God mode on/off")]
+        [CommandInvokerType(CommandInvokerType.Client)]
+        public string God(string[] @params, NetClient client)
+        {
+            PlayerConnection playerConnection = (PlayerConnection)client;
+            PropertyCollection avatarProps = playerConnection.Player.AvatarProperties;
+
+            bool newValue = avatarProps[PropertyEnum.Invulnerable] == false;
+            avatarProps[PropertyEnum.Invulnerable] = newValue;
+
+            bool newValue2 = avatarProps[PropertyEnum.NoEnduranceCosts] == false;
+            avatarProps[PropertyEnum.NoEnduranceCosts, (int)ManaType.Type1] = newValue2;
+            avatarProps[PropertyEnum.NoEnduranceCosts, (int)ManaType.Type2] = newValue2;
+            avatarProps[PropertyEnum.NoEnduranceCosts, (int)ManaType.TypeAll] = newValue2;
+
+            if ((@params.Length > 0 && int.TryParse(@params[0], out int damage)) == false)
+                damage = 1000;
+
+            damage = 100;
+            avatarProps[PropertyEnum.DamagePctBonus] = (float)damage;
+
+            if ((@params.Length > 0 && int.TryParse(@params[0], out int vsboss)) == false)
+                vsboss = 1000;
+
+            vsboss = 100;
+            avatarProps[PropertyEnum.DamagePctBonusVsBosses] = (float)vsboss;
+
+            return $"Invuln {(newValue ? "enabled" : "disabled")}, Dmg x{damage}, VSBoss x{vsboss}, Resource Costs {(newValue2 ? "disabled" : "enabled")}";
+
+        }
+
     }
 }

@@ -1558,6 +1558,13 @@ namespace MHServerEmu.Games.Powers
             }
 
             cooldownDuration = CalcCooldownDuration(powerProto, Owner, Properties, cooldownDuration);
+            
+            if (cooldownDuration == TimeSpan.Zero)
+            {
+                TimeSpan baseCooldown = powerProto.GetCooldownDuration(Properties, Owner.Properties);
+                if (baseCooldown > TimeSpan.Zero)
+                    cooldownDuration = TimeSpan.FromMilliseconds(1);
+            }
 
             if (cooldownDuration > TimeSpan.Zero)
             {
@@ -1579,11 +1586,7 @@ namespace MHServerEmu.Games.Powers
                 }
 
                 //Logger.Debug($"StartCooldown(): {Prototype} - {cooldownDuration.TotalMilliseconds} ms");
-            } 
-            else if (ShouldReplenishCharges())
-            {
-                OnCooldownEndCallback();
-            } 
+            }
 
             return true;
         }

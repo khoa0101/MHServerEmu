@@ -678,7 +678,7 @@ namespace MHServerEmu.Games.Entities.Items
                 or EquipmentInvUISlot.Gear02
                 or EquipmentInvUISlot.Gear03
                 or EquipmentInvUISlot.Gear04
-                or EquipmentInvUISlot.Gear05 => true,
+                or EquipmentInvUISlot.Gear05  => true,
                 _ => false,
             };
         }

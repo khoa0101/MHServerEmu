@@ -446,7 +446,18 @@ namespace MHServerEmu.Games.GameData.Prototypes
                 return false;
 
             // Do the donation by adjusting the property
-            petTechItem.Properties.AdjustProperty(1, new(PropertyEnum.PetItemDonationCount, (PropertyParam)availableAffixPosition));
+            int petDonationMultiplier = availableAffixPosition switch
+            {
+                AffixPosition.PetTech1 => player.Game.CustomGameOptions.PetDonationMultiplierAffix1,
+                AffixPosition.PetTech2 => player.Game.CustomGameOptions.PetDonationMultiplierAffix2,
+                AffixPosition.PetTech3 => player.Game.CustomGameOptions.PetDonationMultiplierAffix3,
+                AffixPosition.PetTech4 => player.Game.CustomGameOptions.PetDonationMultiplierAffix4,
+                AffixPosition.PetTech5 => player.Game.CustomGameOptions.PetDonationMultiplierAffix5,
+                _ => 1
+            };
+
+            // Do the donation by adjusting the property
+            petTechItem.Properties.AdjustProperty(petDonationMultiplier, new(PropertyEnum.PetItemDonationCount, (PropertyParam)availableAffixPosition));
 
             // Destroy the donated item (if we have one)
             itemToDonate?.Destroy();

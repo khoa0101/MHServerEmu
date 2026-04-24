@@ -1,4 +1,5 @@
-﻿using MHServerEmu.Core.Helpers;
+﻿using MHServerEmu.Core.Config;
+using MHServerEmu.Core.Helpers;
 using MHServerEmu.Core.Logging;
 using MHServerEmu.Core.Memory;
 using MHServerEmu.Core.System.Random;
@@ -22,6 +23,7 @@ namespace MHServerEmu.Games.Loot
     public class LootManager
     {
         private static readonly Logger Logger = LogManager.CreateLogger();
+        private static readonly LootConfig Config = ConfigManager.Instance.GetConfig<LootConfig>();
 
         private readonly ItemResolver _resolver;
         private readonly LootSpawnGrid _lootSpawnGrid;
@@ -242,11 +244,18 @@ namespace MHServerEmu.Games.Loot
 
                 foreach (CurrencySpec currencySpec in lootResultSummary.Currencies)
                 {
+                    // Auto-collect all currencies directly instead of spawning them as physical pickups
+                    if (Config.AutoCollectCurrencies && currencySpec.CurrencyRef != PrototypeId.Invalid)
+                    {
+                        player.Properties[PropertyEnum.Currency, currencySpec.CurrencyRef] += currencySpec.Amount;
+                        continue;
+                    }
+
+                    // Fallback: spawn anything without a known currency ref as before
                     currencySpec.ApplyCurrency(properties);
 
                     if (currencySpec.IsItem)
                     {
-                        // LootUtilities::FillItemSpecFromCurrencySpec()
                         ItemSpec itemSpec = new(currencySpec.AgentOrItemProtoRef, GameDatabase.LootGlobalsPrototype.RarityDefault, 1);
                         SpawnItemInternal(itemSpec, player, regionId, dropPositions[i++], sourceEntityId, sourcePosition, properties);
                     }

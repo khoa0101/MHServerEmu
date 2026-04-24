@@ -246,12 +246,16 @@ namespace MHServerEmu.Games.Entities.Options
             if (IsGearSlotVaporizing(slot) == false)
                 return PrototypeId.Invalid;
 
+            // Medal, Ring, and Insignia have no client UI for configuring a threshold independently,
+            // so fall back to the Gear01 threshold the player has already configured.
+            if (slot == EquipmentInvUISlot.Medal || slot == EquipmentInvUISlot.Ring || slot == EquipmentInvUISlot.Insignia)
+                slot = EquipmentInvUISlot.Gear01;
+
             if (_armorRarityVaporizeThresholdDict.TryGetValue(slot, out PrototypeId rarityRef) == false)
                 return PrototypeId.Invalid;
 
             return rarityRef;
         }
-
         /// <summary>
         /// Sets the <see cref="PrototypeId"/> of the vaporize rarity threshold for the specified <see cref="EquipmentInvUISlot"/>.
         /// </summary>
@@ -375,7 +379,10 @@ namespace MHServerEmu.Games.Entities.Options
         /// </summary>
         private bool IsGearSlotVaporizing(EquipmentInvUISlot slot)
         {
-            return slot >= EquipmentInvUISlot.Gear01 && slot <= EquipmentInvUISlot.Gear05;
+            return (slot >= EquipmentInvUISlot.Gear01 && slot <= EquipmentInvUISlot.Gear05)
+                || slot == EquipmentInvUISlot.Medal
+                || slot == EquipmentInvUISlot.Ring
+                || slot == EquipmentInvUISlot.Insignia;
         }
 
         /// <summary>

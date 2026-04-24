@@ -216,10 +216,6 @@ namespace MHServerEmu.Games.Powers
             if (PowerPrototype is not MovementPowerPrototype movementPowerProto || movementPowerProto.ConstantMoveTime == false)
                 Properties.CopyProperty(power.Properties, PropertyEnum.MovementSpeedOverride);
 
-            // Difficulty tier for summons (e.g. Axis raid sentinels)
-            if (PowerPrototype is SummonPowerPrototype)
-                Properties.CopyProperty(powerOwner.Properties, PropertyEnum.DifficultyTier);
-
             // Snapshot properties from triggering power results
             // TODO: Do we need full power results here? We should be able to get away with just the properties
             
@@ -433,6 +429,16 @@ namespace MHServerEmu.Games.Powers
             // For this reason we need to sum them manually here.
             float damagePct = power.Properties[PropertyEnum.DamagePctBonus];
             damagePct += ownerProperties[PropertyEnum.DamagePctBonus];
+
+            Entity entity = powerOwner;
+            if (Game.EntityManager.GetEntity<Avatar>(_propertySourceEntityId) != null)
+            {
+                damagePct += (Game.CustomGameOptions.DefaultDamageBoost > ownerProperties[PropertyEnum.DamagePctBonus] ? Game.CustomGameOptions.DefaultDamageBoost : 0);
+            }
+            if (_powerOwnerProto is AgentTeamUpPrototype || (_ultimatePowerOwnerProto != null && _ultimatePowerOwnerProto is AgentTeamUpPrototype) || IsTeamUpAwaySource)
+            {
+                damagePct += (Game.CustomGameOptions.DefaultDamageBoost > ownerProperties[PropertyEnum.DamagePctBonus] ? Game.CustomGameOptions.DefaultDamageBoost : 0);
+            }
 
             // DamageRating
             float damageRating = powerOwner.GetDamageRating();

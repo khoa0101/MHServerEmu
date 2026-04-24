@@ -1,4 +1,5 @@
 ﻿using MHServerEmu.Core.Collisions;
+using MHServerEmu.Core.Config;
 using MHServerEmu.Core.Helpers;
 using MHServerEmu.Core.Logging;
 using MHServerEmu.Core.Memory;
@@ -11,6 +12,7 @@ using MHServerEmu.Games.Entities;
 using MHServerEmu.Games.Entities.Avatars;
 using MHServerEmu.Games.Entities.Locomotion;
 using MHServerEmu.Games.Events;
+using MHServerEmu.Games.Loot;
 using MHServerEmu.Games.Powers;
 using MHServerEmu.Games.Properties;
 using MHServerEmu.Games.Regions;
@@ -467,6 +469,7 @@ namespace MHServerEmu.Games.GameData.Prototypes
         }
 
         private static readonly Logger Logger = LogManager.CreateLogger();
+        private static readonly LootConfig LootConfig = ConfigManager.Instance.GetConfig<LootConfig>();
 
         private float _orbRadiusSquared;
 
@@ -555,7 +558,8 @@ namespace MHServerEmu.Games.GameData.Prototypes
                 Vector3 agentPosition = agent.RegionLocation.Position;
                 Vector3 avatarPosition = avatar.RegionLocation.Position;
 
-                if (Vector3.DistanceSquared2D(agentPosition, avatarPosition) < _orbRadiusSquared && TryGetPickedUp(agent, avatar))
+                float pickupRadius = LootConfig.OrbPickupRadius > 0f ? LootConfig.OrbPickupRadius : OrbRadius;
+                if (Vector3.DistanceSquared2D(agentPosition, avatarPosition) < pickupRadius * pickupRadius && TryGetPickedUp(agent, avatar))
                     return;
             }
 

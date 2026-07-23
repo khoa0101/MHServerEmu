@@ -883,8 +883,8 @@ namespace MHServerEmu.Games.Entities
                     Vector3 cellPos = position - cell.RegionBounds.Min;
                     cellPos.X /= cellProto.BoundingBox.Width;
                     cellPos.Y /= cellProto.BoundingBox.Length;
-                    int mapX = (int)cellProto.HeightMap.HeightMapSize.X;
-                    int mapY = (int)cellProto.HeightMap.HeightMapSize.Y;
+                    int mapX = cellProto.HeightMap.HeightMapSizeX;
+                    int mapY = cellProto.HeightMap.HeightMapSizeY;
                     int x = Math.Clamp((int)(cellPos.X * mapX), 0, mapX - 1);
                     int y = Math.Clamp((int)(cellPos.Y * mapY), 0, mapY - 1);
                     int index = y * mapX + x;
@@ -4760,12 +4760,7 @@ namespace MHServerEmu.Games.Entities
         private class ScheduledPowerResultsEvent : CallMethodEventParam1<Entity, PowerResults>
         {
             protected override CallbackDelegate GetCallback() => (t, p1) => ((WorldEntity)t).ApplyPowerResults(p1);
-
-            public override bool OnCancelled()
-            {
-                _param1.Clear();    // Clear to prevent conditions leaking from their pool
-                return true;
-            }
+            public override void OnCancelled() => _param1.Clear();    // Clear to prevent conditions leaking from their pool
         }
 
         private class NegateHotspotsEvent : CallMethodEvent<Entity>
@@ -4781,7 +4776,7 @@ namespace MHServerEmu.Games.Entities
         private class ScheduledWeaponReturnEvent : CallMethodEvent<Entity>
         {
             protected override CallbackDelegate GetCallback() => (t) => t.Properties[PropertyEnum.WeaponMissing] = false;
-            public override bool OnCancelled() => _eventTarget.Properties[PropertyEnum.WeaponMissing] = false;
+            public override void OnCancelled() => _eventTarget.Properties[PropertyEnum.WeaponMissing] = false;
         }
 
         private class AwardInteractionLootEvent : CallMethodEventParam1<Entity, ulong>

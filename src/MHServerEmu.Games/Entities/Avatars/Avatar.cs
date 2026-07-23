@@ -7364,7 +7364,7 @@ namespace MHServerEmu.Games.Entities.Avatars
                 _eventTarget = avatar;
             }
 
-            public override bool OnTriggered()
+            public override void OnTriggered()
             {
                 Avatar avatar = (Avatar)_eventTarget;
                 PrototypeId swapInPowerRef = GameDatabase.GlobalsPrototype.AvatarSwapInPower;
@@ -7372,7 +7372,7 @@ namespace MHServerEmu.Games.Entities.Avatars
                 PowerActivationSettings settings = new(avatar.Id, avatar.RegionLocation.Position, avatar.RegionLocation.Position);
                 settings.Flags = PowerActivationSettingsFlags.NotifyOwner;
 
-                return avatar.ActivatePower(swapInPowerRef, ref settings) == PowerUseResult.Success;
+                avatar.ActivatePower(swapInPowerRef, ref settings);
             }
         }
 

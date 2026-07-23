@@ -26,6 +26,9 @@ namespace MHServerEmu.Games.Loot
         private static readonly Logger Logger = LogManager.CreateLogger();
         private static readonly LootVaporizerConfig Config = ConfigManager.Instance.GetConfig<LootVaporizerConfig>();
 
+        /// <summary>
+        /// Returns <see langword="true"/> if the provided <see cref="LootResult"/> should be vaporized.
+        /// </summary>
         public static bool ShouldVaporizeLootResult(Player player, in LootResult lootResult, PrototypeId avatarProtoRef)
         {
             if (player == null)
@@ -239,13 +242,13 @@ namespace MHServerEmu.Games.Loot
         public static bool VaporizeItemSpec(Player player, ItemSpec itemSpec)
         {
             Avatar avatar = player.CurrentAvatar;
-            if (avatar == null) return Logger.WarnReturn(false, "VaporizeItemSpec(): avatar == null");
+            if (!Verify.IsNotNull(avatar)) return false;
 
             ItemPrototype itemProto = itemSpec.ItemProtoRef.As<ItemPrototype>();
-            if (itemProto == null) return Logger.WarnReturn(false, "VaporizeItemSpec(): itemProto == null");
+            if (!Verify.IsNotNull(itemProto)) return false;
 
             Inventory petItemInv = avatar.GetInventory(InventoryConvenienceLabel.PetItem);
-            if (petItemInv == null) return Logger.WarnReturn(false, "VaporizeItemSpec(): petItemInv == null");
+            if (!Verify.IsNotNull(petItemInv)) return false;
 
             Item petTechItem = player.Game.EntityManager.GetEntity<Item>(petItemInv.GetEntityInSlot(0));
             if (petTechItem != null)
